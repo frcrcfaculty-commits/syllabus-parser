@@ -1,4 +1,4 @@
-Flask>=2.0.0
+flask>=2.0.0
 openpyxl>=3.0.0
 pdfplumber>=0.7.0
-Werkzeug>=2.0.0
+werkzeug>=2.0.0

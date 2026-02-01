@@ -1,39 +1,30 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-env/
-venv/
-.venv/
-ENV/
 
-# Database
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Database files (local data)
 *.db
 *.sqlite
 *.sqlite3
-
-# Uploads
-uploads/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-*~
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
+# Uploads folder (local data)
+uploads/
+
 # Logs
 *.log
-
-# Environment
-.env
-.env.local
-
-# Byte-compiled / optimized / DLL files
-*.pyc
