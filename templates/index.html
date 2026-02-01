@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Parser | Marks Distribution Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 Syllabus Parser</h1>
+            <p>Generate marks distribution and student course matrix</p>
+            <button class="btn btn-danger" onclick="resetAllData()" style="position: absolute; top: 20px; right: 20px;">
+                🗑️ Reset All Data
+            </button>
+        </header>
+
+        <!-- Step Navigation Buttons -->
+        <div class="step-indicator">
+            <div class="step step-btn active" id="step1Indicator" onclick="goToStep(1)">
+                <span class="step-number">1</span>
+                <span class="step-label">Syllabus</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step step-btn" id="step2Indicator" onclick="goToStep(2)">
+                <span class="step-number">2</span>
+                <span class="step-label">Students</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step step-btn" id="step3Indicator" onclick="goToStep(3)">
+                <span class="step-number">3</span>
+                <span class="step-label">Results</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step step-btn" id="step4Indicator" onclick="goToStep(4)">
+                <span class="step-number">4</span>
+                <span class="step-label">Output</span>
+            </div>
+        </div>
+
+        <!-- STEP 1: Syllabus Upload -->
+        <div id="step1Section" class="step-section">
+            <h2 class="step-title">📚 STEP 1: Upload Syllabus</h2>
+            <p class="step-desc">Upload syllabus PDF/Excel to extract course marks structure</p>
+
+            <div class="upload-section">
+                <div class="upload-box" id="dropZone">
+                    <div class="upload-icon">📄</div>
+                    <h3>Drop your Excel or PDF file here</h3>
+                    <p>or click to browse</p>
+                    <input type="file" id="fileInput" name="file" accept=".xlsx, .xls, .pdf" hidden>
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                        Choose Syllabus File
+                    </button>
+                </div>
+                <div id="fileInfo" class="file-info hidden">
+                    <span id="fileName"></span>
+                    <button class="btn btn-small" onclick="clearFile()">✕</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsSection" class="results-section hidden">
+            <div class="section-header">
+                <h2>✅ Syllabus Processed Successfully!</h2>
+                <div class="header-actions">
+                    <span id="selectedCount" class="selected-count">0 selected</span>
+                    <span id="totalCredits" class="total-credits">Total: 0 credits</span>
+                </div>
+            </div>
+
+            <div class="filter-controls">
+                <button class="btn btn-small" onclick="selectAll()">✓ Select All</button>
+                <button class="btn btn-small" onclick="selectNone()">✗ Clear</button>
+                <button class="btn btn-success btn-large" onclick="downloadExcel()">
+                    ⬇️ DOWNLOAD EXCEL (2 Sheets)
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-col"><input type="checkbox" id="selectAllCheckbox"
+                                    onchange="toggleAll(this)" checked></th>
+                            <th>Course Code</th>
+                            <th>Course Title</th>
+                            <th>Credits</th>
+                            <th>MAX</th>
+                            <th>MIN</th>
+                            <th>TH_MAX</th>
+                            <th>TH_MIN</th>
+                            <th>PR_MAX</th>
+                            <th>PR_MIN</th>
+                            <th>CE_MAX</th>
+                            <th>CE_MIN</th>
+                            <th>VV_MAX</th>
+                            <th>VV_MIN</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="step-actions download-actions">
+                <button class="btn btn-success btn-large" onclick="saveStep1ToDatabase()">
+                    💾 Save Step 1 to Database
+                </button>
+                <button class="btn btn-primary btn-large" onclick="downloadStep1Excel()">
+                    ⬇️ Download Step 1 (Syllabus Only)
+                </button>
+                <button class="btn btn-success btn-large" onclick="proceedToStep2()">
+                    ➡️ Proceed to Step 2: Upload Student List
+                </button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Processing syllabus...</p>
+        </div>
+
+        <!-- STEP 2: Student List Upload -->
+        <div id="step2Section" class="step-section hidden">
+            <h2 class="step-title">👥 STEP 2: Upload Student List</h2>
+            <p class="step-desc">Upload Excel file with student USN, Roll No, Name, and opted courses</p>
+
+            <div class="upload-section">
+                <div class="upload-box" id="studentDropZone">
+                    <div class="upload-icon">📋</div>
+                    <h3>Drop Student List Excel here</h3>
+                    <p>Expected: USN, ROLLNO, NAME, Course Codes...</p>
+                    <input type="file" id="studentFileInput" name="studentFile" accept=".xlsx, .xls" hidden>
+                    <button class="btn btn-primary" onclick="document.getElementById('studentFileInput').click()">
+                        Choose Student List File
+                    </button>
+                </div>
+                <div id="studentFileInfo" class="file-info hidden">
+                    <span id="studentFileName"></span>
+                    <button class="btn btn-small" onclick="clearStudentFile()">✕</button>
+                </div>
+            </div>
+
+            <div id="studentResultsSection" class="results-section hidden">
+                <div class="section-header">
+                    <h2>✅ Student List Loaded!</h2>
+                    <div class="header-actions">
+                        <span id="studentCount" class="selected-count">0 students</span>
+                    </div>
+                </div>
+
+                <div class="table-container" style="max-height: 300px;">
+                    <table id="studentTable">
+                        <thead>
+                            <tr>
+                                <th>USN</th>
+                                <th>Roll No</th>
+                                <th>Name</th>
+                                <th>Courses Opted</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="step-actions download-actions">
+                    <button class="btn btn-success btn-large" onclick="saveStep2ToDatabase()">
+                        💾 Save Step 2 to Database
+                    </button>
+                    <button class="btn btn-primary btn-large" onclick="downloadStep2Excel()">
+                        ⬇️ Download Step 1+2 (Syllabus + Students)
+                    </button>
+                    <button class="btn btn-success btn-large" onclick="proceedToStep3()">
+                        ➡️ Proceed to Step 3: Upload BE Results
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="studentLoading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Processing student list...</p>
+        </div>
+
+        <!-- STEP 3: BE Results Upload -->
+        <div id="step3Section" class="step-section hidden">
+            <h2 class="step-title">📊 STEP 3: Upload BE Results</h2>
+            <p class="step-desc">Upload the exam results sheet to record student marks</p>
+
+            <div class="upload-section">
+                <div class="upload-box" id="resultsDropZone">
+                    <div class="upload-icon">📑</div>
+                    <h3>Drop your BE Results Excel file here</h3>
+                    <p>or click to browse</p>
+                    <input type="file" id="resultsFileInput" accept=".xlsx,.xls" hidden>
+                </div>
+
+                <div id="resultsFileInfo" class="file-info hidden">
+                    <span class="file-name" id="resultsFileName"></span>
+                    <button class="btn btn-small" onclick="clearResultsFile()">✕ Clear</button>
+                </div>
+            </div>
+
+            <!-- Sheet Selection -->
+            <div id="sheetSelection" class="hidden" style="margin: 1rem 0; text-align: center;">
+                <label for="sheetSelect" style="margin-right: 0.5rem;">Select Result Sheet:</label>
+                <select id="sheetSelect" class="sheet-select" onchange="processSelectedSheet()">
+                </select>
+            </div>
+
+            <!-- Results Preview -->
+            <div id="resultsResultsSection" class="results-section hidden">
+                <div class="section-header">
+                    <h3>📋 Parsed Results</h3>
+                    <span class="badge" id="resultsCount">0 records</span>
+                </div>
+
+                <div class="results-stats">
+                    <div class="stat-card">
+                        <span class="stat-value" id="resultStudentCount">0</span>
+                        <span class="stat-label">Students</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="resultCourseCount">0</span>
+                        <span class="stat-label">Courses</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="resultMarksCount">0</span>
+                        <span class="stat-label">Marks Entries</span>
+                    </div>
+                </div>
+
+                <div class="table-container" style="max-height: 400px; overflow: auto;">
+                    <table id="resultsTable">
+                        <thead id="resultsTableHead">
+                        </thead>
+                        <tbody id="resultsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="step-actions download-actions">
+                    <button class="btn btn-success btn-large" onclick="saveResultsToDatabase()">
+                        💾 Save to Database
+                    </button>
+                    <button class="btn btn-primary btn-large" onclick="downloadStep3Excel()">
+                        ⬇️ Download Step 1+2+3 (Combined)
+                    </button>
+                    <button class="btn btn-success btn-large" onclick="proceedToStep4()">
+                        ➡️ Proceed to Step 4: Generate Final Sheet
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsLoading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Processing results file...</p>
+        </div>
+
+        <!-- STEP 4: Generate Final Result Sheet -->
+        <div id="step4Section" class="step-section hidden">
+            <h2 class="step-title">📋 STEP 4: Generate Final Result Sheet</h2>
+            <p class="step-desc">Combine all data from Steps 1-3 to generate the final comprehensive result sheet</p>
+
+            <!-- Precondition Check -->
+            <div id="step4Preconditions" class="precondition-box">
+                <h3>📋 Prerequisites Check</h3>
+                <div class="precondition-list">
+                    <div class="precondition-item" id="preStep1">
+                        <span class="precondition-icon">⏳</span>
+                        <span>Step 1: Syllabus uploaded</span>
+                        <span class="precondition-count" id="preStep1Count">0 courses</span>
+                    </div>
+                    <div class="precondition-item" id="preStep2">
+                        <span class="precondition-icon">⏳</span>
+                        <span>Step 2: Students uploaded</span>
+                        <span class="precondition-count" id="preStep2Count">0 students</span>
+                    </div>
+                    <div class="precondition-item" id="preStep3">
+                        <span class="precondition-icon">⏳</span>
+                        <span>Step 3: Results uploaded</span>
+                        <span class="precondition-count" id="preStep3Count">0 marks</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="checkPreconditions()">
+                    🔄 Refresh Status
+                </button>
+            </div>
+
+            <div class="upload-section">
+                <div class="config-box">
+                    <h3>Configuration</h3>
+                    <div class="config-row">
+                        <label for="semesterSelect">Semester:</label>
+                        <select id="semesterSelect" class="sheet-select">
+                            <option value="Sem4">Semester 4 (SE)</option>
+                            <option value="Sem6">Semester 6 (TE)</option>
+                            <option value="Sem8" selected>Semester 8 (BE)</option>
+                        </select>
+                    </div>
+                    <div class="config-row">
+                        <label for="sessionInput">Session:</label>
+                        <input type="text" id="sessionInput" class="sheet-select" value="2025-05"
+                            placeholder="e.g., 2025-05">
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-actions" style="margin-top: 1.5rem;">
+                <button class="btn btn-primary btn-large" onclick="generateResultSheet()" id="generateResultBtn">
+                    🔄 Generate Result Sheet
+                </button>
+            </div>
+
+            <div id="generateLoading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Generating result sheet...</p>
+            </div>
+
+            <!-- Result Preview -->
+            <div id="resultSheetPreview" class="results-section hidden">
+                <div class="section-header">
+                    <h3>📊 Result Sheet Preview</h3>
+                    <span class="badge" id="resultRowCount">0 students</span>
+                </div>
+
+                <div class="results-stats">
+                    <div class="stat-card">
+                        <span class="stat-value" id="step4StudentCount">0</span>
+                        <span class="stat-label">Students</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="step4CourseCount">0</span>
+                        <span class="stat-label">Courses</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="step4AvgSGPA">0.00</span>
+                        <span class="stat-label">Avg SGPA</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="step4PassRate">0%</span>
+                        <span class="stat-label">Pass Rate</span>
+                    </div>
+                </div>
+
+                <!-- Extraction Statistics -->
+                <div class="extraction-stats">
+                    <h4>📊 Data Extraction Summary</h4>
+                    <div class="extraction-row">
+                        <div class="extraction-item success">
+                            <span class="extraction-icon">✅</span>
+                            <span id="extractedCount">0</span>
+                            <span>Cells Extracted</span>
+                        </div>
+                        <div class="extraction-item warning">
+                            <span class="extraction-icon">⚠️</span>
+                            <span id="missingCount">0</span>
+                            <span>Cells Missing</span>
+                        </div>
+                        <div class="extraction-item info">
+                            <span class="extraction-icon">📈</span>
+                            <span id="extractionRate">0%</span>
+                            <span>Fill Rate</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container" style="max-height: 500px; overflow: auto;">
+                    <table id="resultSheetTable">
+                        <thead id="resultSheetHead">
+                            <tr>
+                                <th>PRN</th>
+                                <th>Name</th>
+                                <th>Section</th>
+                                <th>Gender</th>
+                                <th>TOT_MRKS</th>
+                                <th>SGPA</th>
+                                <th>Result</th>
+                                <th>SUB1</th>
+                                <th>SUB2</th>
+                                <th>SUB3</th>
+                                <th>...</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultSheetBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="step-actions download-actions">
+                    <button class="btn btn-success btn-large" onclick="downloadResultSheet()">
+                        ⬇️ Download Complete Result Sheet (Excel)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let coursesData = [];
+
+        // Load existing data on page load
+        async function loadExistingData() {
+            try {
+                // Check if we have existing courses in the database
+                const response = await fetch('/get-courses');
+                const data = await response.json();
+
+                if (data.courses && data.courses.length > 0) {
+                    coursesData = data.courses;
+                    displayResults(data.courses);
+                    console.log('Loaded ' + data.courses.length + ' existing courses from database');
+                }
+            } catch (error) {
+                console.log('No existing courses found:', error);
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', loadExistingData);
+
+        // File input handling
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+
+        fileInput.addEventListener('change', handleFile);
+
+        // Drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFile();
+            }
+        });
+
+        function handleFile() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileInfo').classList.remove('hidden');
+
+            uploadFile(file);
+        }
+
+        function clearFile() {
+            fileInput.value = '';
+            document.getElementById('fileInfo').classList.add('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            coursesData = [];
+        }
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            document.getElementById('loading').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    coursesData = data.courses;
+                    displayResults(data.courses);
+                }
+            } catch (error) {
+                alert('Upload failed: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        function displayResults(courses) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            courses.forEach((course, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="checkbox-col"><input type="checkbox" class="course-checkbox" data-index="${index}" checked onchange="updateTotals()"></td>
+                    <td><strong>${course.code}</strong></td>
+                    <td>${course.title}</td>
+                    <td class="credits-cell">${course.credits}</td>
+                    <td>${course.max}</td>
+                    <td>${course.min}</td>
+                    <td>${course.th_max}</td>
+                    <td>${course.th_min}</td>
+                    <td>${course.pr_max}</td>
+                    <td>${course.pr_min}</td>
+                    <td>${course.ce_max}</td>
+                    <td>${course.ce_min}</td>
+                    <td>${course.vv_max}</td>
+                    <td>${course.vv_min}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('resultsSection').classList.remove('hidden');
+            updateTotals();
+        }
+
+        function updateTotals() {
+            const checkboxes = document.querySelectorAll('.course-checkbox');
+            let selectedCount = 0;
+            let selectedCredits = 0;
+
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    selectedCount++;
+                    const idx = parseInt(cb.dataset.index);
+                    selectedCredits += parseInt(coursesData[idx].credits) || 0;
+                }
+            });
+
+            document.getElementById('selectedCount').textContent = `${selectedCount} of ${coursesData.length} selected`;
+            document.getElementById('totalCredits').textContent = `Total: ${selectedCredits} credits`;
+
+            const headerCb = document.getElementById('selectAllCheckbox');
+            headerCb.checked = selectedCount === coursesData.length;
+            headerCb.indeterminate = selectedCount > 0 && selectedCount < coursesData.length;
+        }
+
+        function toggleAll(headerCheckbox) {
+            const checkboxes = document.querySelectorAll('.course-checkbox');
+            checkboxes.forEach(cb => cb.checked = headerCheckbox.checked);
+            updateTotals();
+        }
+
+        function selectAll() {
+            document.querySelectorAll('.course-checkbox').forEach(cb => cb.checked = true);
+            document.getElementById('selectAllCheckbox').checked = true;
+            updateTotals();
+        }
+
+        function selectNone() {
+            document.querySelectorAll('.course-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAllCheckbox').checked = false;
+            updateTotals();
+        }
+
+        function getSelectedCourses() {
+            const selected = [];
+            document.querySelectorAll('.course-checkbox').forEach(cb => {
+                if (cb.checked) {
+                    const idx = parseInt(cb.dataset.index);
+                    selected.push(coursesData[idx]);
+                }
+            });
+            return selected;
+        }
+
+        async function downloadExcel() {
+            const filteredCourses = getSelectedCourses();
+
+            if (filteredCourses.length === 0) {
+                alert('Please select at least one course to download');
+                return;
+            }
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filtered_courses: filteredCourses,
+                        all_courses: coursesData
+                    })
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    try {
+                        const errData = JSON.parse(text);
+                        throw new Error(errData.error || 'Download failed');
+                    } catch {
+                        throw new Error('Download failed: ' + response.status);
+                    }
+                }
+
+                // Get the raw array buffer and create blob with explicit Excel MIME type
+                const arrayBuffer = await response.arrayBuffer();
+                const blob = new Blob([arrayBuffer], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'BE_Syllabus_Generated.xlsx';
+                document.body.appendChild(a);
+                a.click();
+
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Download failed: ' + error.message);
+            }
+        }
+
+        // ============== STEP 2: Student List Functions ==============
+        let studentsData = [];
+
+        const studentFileInput = document.getElementById('studentFileInput');
+        const studentDropZone = document.getElementById('studentDropZone');
+
+        if (studentFileInput) {
+            studentFileInput.addEventListener('change', handleStudentFile);
+        }
+
+        if (studentDropZone) {
+            studentDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                studentDropZone.classList.add('dragover');
+            });
+
+            studentDropZone.addEventListener('dragleave', () => {
+                studentDropZone.classList.remove('dragover');
+            });
+
+            studentDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                studentDropZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    studentFileInput.files = files;
+                    handleStudentFile();
+                }
+            });
+        }
+
+        function proceedToStep2() {
+            if (coursesData.length === 0) {
+                alert('Please upload and process a syllabus first');
+                return;
+            }
+
+            // Update step indicators
+            document.getElementById('step1Indicator').classList.remove('active');
+            document.getElementById('step1Indicator').classList.add('completed');
+            document.getElementById('step2Indicator').classList.add('active');
+
+            // Show step 2 section
+            document.getElementById('step2Section').classList.remove('hidden');
+
+            // Scroll to step 2
+            document.getElementById('step2Section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function proceedToStep3() {
+            if (!studentsData || studentsData.length === 0) {
+                alert('Please upload and process student list first');
+                return;
+            }
+
+            // Update step indicators
+            document.getElementById('step2Indicator').classList.remove('active');
+            document.getElementById('step2Indicator').classList.add('completed');
+            document.getElementById('step3Indicator').classList.add('active');
+
+            // Show step 3 section
+            document.getElementById('step3Section').classList.remove('hidden');
+            document.getElementById('step3Section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function proceedToStep4() {
+            // Update step indicators
+            document.getElementById('step3Indicator').classList.remove('active');
+            document.getElementById('step3Indicator').classList.add('completed');
+            document.getElementById('step4Indicator').classList.add('active');
+
+            // Show step 4 section
+            document.getElementById('step4Section').classList.remove('hidden');
+            document.getElementById('step4Section').scrollIntoView({ behavior: 'smooth' });
+
+            // Check preconditions automatically
+            checkPreconditions();
+        }
+
+        // Download Step 1 only (Syllabus)
+        function downloadStep1Excel() {
+            window.location.href = '/download-step1';
+        }
+
+        // Download Step 1+2 (Syllabus + Students)
+        function downloadStep2Excel() {
+            window.location.href = '/download-step2';
+        }
+
+        // Download Step 1+2+3 (Syllabus + Students + Results)
+        function downloadStep3Excel() {
+            window.location.href = '/download-step3';
+        }
+
+        // Check preconditions for Step 4
+        async function checkPreconditions() {
+            try {
+                const response = await fetch('/check-preconditions');
+                const data = await response.json();
+
+                // Update Step 1
+                const pre1 = document.getElementById('preStep1');
+                const pre1Icon = pre1.querySelector('.precondition-icon');
+                if (data.courses > 0) {
+                    pre1.classList.add('ready');
+                    pre1.classList.remove('pending');
+                    pre1Icon.textContent = '✅';
+                } else {
+                    pre1.classList.add('pending');
+                    pre1.classList.remove('ready');
+                    pre1Icon.textContent = '⏳';
+                }
+                document.getElementById('preStep1Count').textContent = data.courses + ' courses';
+
+                // Update Step 2
+                const pre2 = document.getElementById('preStep2');
+                const pre2Icon = pre2.querySelector('.precondition-icon');
+                if (data.students > 0) {
+                    pre2.classList.add('ready');
+                    pre2.classList.remove('pending');
+                    pre2Icon.textContent = '✅';
+                } else {
+                    pre2.classList.add('pending');
+                    pre2.classList.remove('ready');
+                    pre2Icon.textContent = '⏳';
+                }
+                document.getElementById('preStep2Count').textContent = data.students + ' students';
+
+                // Update Step 3
+                const pre3 = document.getElementById('preStep3');
+                const pre3Icon = pre3.querySelector('.precondition-icon');
+                if (data.marks > 0) {
+                    pre3.classList.add('ready');
+                    pre3.classList.remove('pending');
+                    pre3Icon.textContent = '✅';
+                } else {
+                    pre3.classList.add('pending');
+                    pre3.classList.remove('ready');
+                    pre3Icon.textContent = '⏳';
+                }
+                document.getElementById('preStep3Count').textContent = data.marks + ' marks';
+
+            } catch (error) {
+                console.error('Failed to check preconditions:', error);
+            }
+        }
+
+        function goToStep(stepNum) {
+            // Update all step indicators
+            document.querySelectorAll('.step').forEach((step, idx) => {
+                step.classList.remove('active', 'completed');
+                if (idx + 1 < stepNum) {
+                    step.classList.add('completed');
+                } else if (idx + 1 === stepNum) {
+                    step.classList.add('active');
+                }
+            });
+
+            // Show/hide sections based on step
+            const sections = ['step1Section', 'step2Section', 'step3Section', 'step4Section'];
+            sections.forEach((sectionId, idx) => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    if (idx + 1 === stepNum) {
+                        section.classList.remove('hidden');
+                        section.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        // Alias for backward compatibility
+        function goToStep1() { goToStep(1); }
+        function goToStep2() { goToStep(2); }
+        function goToStep3() { goToStep(3); }
+        function goToStep4() { goToStep(4); }
+
+        // Reset All Data - clears database and refreshes page
+        async function resetAllData() {
+            if (!confirm('⚠️ Are you sure you want to reset ALL data? This will delete all courses, students, and marks from the database.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/reset-all-data', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ All data has been reset successfully!');
+                    window.location.reload();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Failed to reset data: ' + error.message);
+            }
+        }
+
+        // Save Step 1 data to database
+        async function saveStep1ToDatabase() {
+            if (coursesData.length === 0) {
+                alert('No courses to save. Please upload a syllabus first.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/save-step1', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ courses: coursesData })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(`✅ Step 1 saved! ${data.courses_saved} courses saved to database.`);
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Failed to save: ' + error.message);
+            }
+        }
+
+        // Save Step 2 data to database
+        async function saveStep2ToDatabase() {
+            if (!studentsData || studentsData.length === 0) {
+                alert('No students to save. Please upload a student list first.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/save-step2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ students: studentsData })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(`✅ Step 2 saved! ${data.students_saved} students saved to database.`);
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Failed to save: ' + error.message);
+            }
+        }
+
+        function handleStudentFile() {
+            const file = studentFileInput.files[0];
+            if (!file) return;
+
+            document.getElementById('studentFileName').textContent = file.name;
+            document.getElementById('studentFileInfo').classList.remove('hidden');
+
+            uploadStudentFile(file);
+        }
+
+        function clearStudentFile() {
+            studentFileInput.value = '';
+            document.getElementById('studentFileInfo').classList.add('hidden');
+            document.getElementById('studentResultsSection').classList.add('hidden');
+            studentsData = [];
+        }
+
+        async function uploadStudentFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            document.getElementById('studentLoading').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/upload-students', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    studentsData = data.students;
+                    displayStudents(data.students);
+                }
+            } catch (error) {
+                alert('Student file upload failed: ' + error.message);
+            } finally {
+                document.getElementById('studentLoading').classList.add('hidden');
+            }
+        }
+
+        function displayStudents(students) {
+            const tbody = document.getElementById('studentTableBody');
+            tbody.innerHTML = '';
+
+            students.forEach(student => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${student.usn || '-'}</td>
+                    <td>${student.roll_no || '-'}</td>
+                    <td>${student.name || '-'}</td>
+                    <td style="font-size: 0.85em;">${(student.courses || []).join(', ')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('studentCount').textContent = `${students.length} students`;
+            document.getElementById('studentResultsSection').classList.remove('hidden');
+        }
+
+        // ============== DOWNLOAD FUNCTIONS ==============
+
+        async function downloadStudentsExcel() {
+            if (studentsData.length === 0) {
+                alert('No student data to download');
+                return;
+            }
+
+            try {
+                const response = await fetch('/download-students', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        students: studentsData
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Students download failed');
+                }
+
+                const arrayBuffer = await response.arrayBuffer();
+                const blob = new Blob([arrayBuffer], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'Student_List.xlsx';
+                document.body.appendChild(a);
+                a.click();
+
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+            } catch (error) {
+                console.error('Students download error:', error);
+                alert('Students download failed: ' + error.message);
+            }
+        }
+
+        async function downloadCombinedExcel() {
+            if (coursesData.length === 0 && studentsData.length === 0) {
+                alert('No data to download. Please complete Step 1 and Step 2 first.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/download-combined', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        courses: coursesData,
+                        students: studentsData
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Combined download failed');
+                }
+
+                const arrayBuffer = await response.arrayBuffer();
+                const blob = new Blob([arrayBuffer], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'Syllabus_Students_Combined.xlsx';
+                document.body.appendChild(a);
+                a.click();
+
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+            } catch (error) {
+                console.error('Combined download error:', error);
+                alert('Combined download failed: ' + error.message);
+            }
+        }
+
+        // ============== STEP 3: BE Results Upload ==============
+        let resultsData = { courses: [], students: [], marks: [] };
+        let availableSheets = [];
+        let currentResultsFile = null;
+
+        // Results file input handling
+        const resultsFileInput = document.getElementById('resultsFileInput');
+        const resultsDropZone = document.getElementById('resultsDropZone');
+
+        if (resultsDropZone) {
+            resultsDropZone.addEventListener('click', () => resultsFileInput.click());
+
+            resultsDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                resultsDropZone.classList.add('dragover');
+            });
+
+            resultsDropZone.addEventListener('dragleave', () => {
+                resultsDropZone.classList.remove('dragover');
+            });
+
+            resultsDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                resultsDropZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    resultsFileInput.files = files;
+                    handleResultsFile();
+                }
+            });
+        }
+
+        if (resultsFileInput) {
+            resultsFileInput.addEventListener('change', handleResultsFile);
+        }
+
+        async function handleResultsFile() {
+            const file = resultsFileInput.files[0];
+            if (!file) return;
+
+            currentResultsFile = file;
+            document.getElementById('resultsFileName').textContent = file.name;
+            document.getElementById('resultsFileInfo').classList.remove('hidden');
+
+            // First, get available sheets
+            await getAvailableSheets(file);
+        }
+
+        async function getAvailableSheets(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            document.getElementById('resultsLoading').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/get-sheets', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                availableSheets = data.sheets;
+
+                // Filter for result sheets
+                const resultSheets = availableSheets.filter(s =>
+                    s.toLowerCase().includes('result') ||
+                    s.toLowerCase().includes('be_result') ||
+                    s.toLowerCase().includes('te_result') ||
+                    s.toLowerCase().includes('se_result')
+                );
+
+                const sheetSelect = document.getElementById('sheetSelect');
+                sheetSelect.innerHTML = '<option value="">-- Select Sheet --</option>';
+
+                // Add result sheets first
+                if (resultSheets.length > 0) {
+                    resultSheets.forEach(sheet => {
+                        const option = document.createElement('option');
+                        option.value = sheet;
+                        option.textContent = sheet + ' ⭐';
+                        sheetSelect.appendChild(option);
+                    });
+                }
+
+                // Add other sheets
+                availableSheets.filter(s => !resultSheets.includes(s)).forEach(sheet => {
+                    const option = document.createElement('option');
+                    option.value = sheet;
+                    option.textContent = sheet;
+                    sheetSelect.appendChild(option);
+                });
+
+                document.getElementById('sheetSelection').classList.remove('hidden');
+
+                // Auto-select if only one result sheet
+                if (resultSheets.length === 1) {
+                    sheetSelect.value = resultSheets[0];
+                    processSelectedSheet();
+                }
+
+            } catch (error) {
+                alert('Failed to read sheets: ' + error.message);
+            } finally {
+                document.getElementById('resultsLoading').classList.add('hidden');
+            }
+        }
+
+        async function processSelectedSheet() {
+            const sheetName = document.getElementById('sheetSelect').value;
+            if (!sheetName || !currentResultsFile) return;
+
+            const formData = new FormData();
+            formData.append('file', currentResultsFile);
+            formData.append('sheet', sheetName);
+
+            document.getElementById('resultsLoading').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/upload-results', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                resultsData = data;
+                displayStep3Results(data);
+
+            } catch (error) {
+                alert('Failed to process results: ' + error.message);
+            } finally {
+                document.getElementById('resultsLoading').classList.add('hidden');
+            }
+        }
+
+        function displayStep3Results(data) {
+            // Update stats
+            document.getElementById('resultStudentCount').textContent = data.students?.length || 0;
+            document.getElementById('resultCourseCount').textContent = data.courses?.length || 0;
+            document.getElementById('resultMarksCount').textContent = data.marks_count || 0;
+            document.getElementById('resultsCount').textContent = `${data.students?.length || 0} students`;
+
+            // Build table header
+            const thead = document.getElementById('resultsTableHead');
+            let headerHtml = '<tr><th>USN</th><th>Roll No</th><th>Name</th><th>Section</th>';
+
+            // Add course headers (just show course code and total)
+            (data.courses || []).forEach(course => {
+                headerHtml += `<th title="${course.name}">${course.code}<br><small>Total</small></th>`;
+            });
+            headerHtml += '</tr>';
+            thead.innerHTML = headerHtml;
+
+            // Build table body
+            const tbody = document.getElementById('resultsTableBody');
+            tbody.innerHTML = '';
+
+            (data.students || []).forEach(student => {
+                const tr = document.createElement('tr');
+                let rowHtml = `
+                    <td>${student.usn || '-'}</td>
+                    <td>${student.roll_no || '-'}</td>
+                    <td>${student.name || '-'}</td>
+                    <td>${student.section || '-'}</td>
+                `;
+
+                // Add marks for each course
+                (data.courses || []).forEach(course => {
+                    const mark = (data.marks || []).find(m =>
+                        m.usn === student.usn && m.course_code === course.code
+                    );
+                    if (mark) {
+                        rowHtml += `<td class="marks-cell">${mark.total || '-'}</td>`;
+                    } else {
+                        rowHtml += `<td>-</td>`;
+                    }
+                });
+
+                tr.innerHTML = rowHtml;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('resultsResultsSection').classList.remove('hidden');
+        }
+
+        function clearResultsFile() {
+            resultsFileInput.value = '';
+            currentResultsFile = null;
+            document.getElementById('resultsFileInfo').classList.add('hidden');
+            document.getElementById('sheetSelection').classList.add('hidden');
+            document.getElementById('resultsResultsSection').classList.add('hidden');
+            resultsData = { courses: [], students: [], marks: [] };
+        }
+
+        async function saveResultsToDatabase() {
+            if (!resultsData.students || resultsData.students.length === 0) {
+                alert('No results data to save');
+                return;
+            }
+
+            try {
+                const response = await fetch('/save-results', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        courses: resultsData.courses,
+                        students: resultsData.students,
+                        marks: resultsData.marks,
+                        syllabus_courses: coursesData,
+                        student_list: studentsData
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error saving: ' + data.error);
+                    return;
+                }
+
+                alert('✅ Data saved successfully!\n\n' +
+                    `Students: ${data.students_saved}\n` +
+                    `Courses: ${data.courses_saved}\n` +
+                    `Marks: ${data.marks_saved}`);
+
+            } catch (error) {
+                alert('Failed to save: ' + error.message);
+            }
+        }
+
+        async function downloadResultsExcel() {
+            if (!resultsData.students || resultsData.students.length === 0) {
+                alert('No results data to download');
+                return;
+            }
+
+            try {
+                const response = await fetch('/download-results', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(resultsData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Download failed');
+                }
+
+                const arrayBuffer = await response.arrayBuffer();
+                const blob = new Blob([arrayBuffer], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'BE_Results_Processed.xlsx';
+                document.body.appendChild(a);
+                a.click();
+
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+            } catch (error) {
+                alert('Download failed: ' + error.message);
+            }
+        }
+
+        // ============== STEP 4: Final Result Sheet ==============
+        let resultSheetData = null;
+
+        async function generateResultSheet() {
+            const semester = document.getElementById('semesterSelect').value;
+            const session = document.getElementById('sessionInput').value;
+
+            document.getElementById('generateLoading').classList.remove('hidden');
+            document.getElementById('resultSheetPreview').classList.add('hidden');
+
+            try {
+                const response = await fetch('/generate-result-sheet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        semester: semester,
+                        session: session,
+                        syllabus_courses: coursesData,
+                        students: studentsData,
+                        results: resultsData
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to generate result sheet');
+                }
+
+                resultSheetData = await response.json();
+                displayResultSheetPreview(resultSheetData);
+
+            } catch (error) {
+                alert('Error generating result sheet: ' + error.message);
+            } finally {
+                document.getElementById('generateLoading').classList.add('hidden');
+            }
+        }
+
+        function displayResultSheetPreview(data) {
+            const preview = document.getElementById('resultSheetPreview');
+            preview.classList.remove('hidden');
+
+            // Update stats
+            document.getElementById('step4StudentCount').textContent = data.students?.length || 0;
+            document.getElementById('step4CourseCount').textContent = data.courses?.length || 0;
+            document.getElementById('resultRowCount').textContent = `${data.students?.length || 0} students`;
+
+            // Calculate averages
+            let totalSGPA = 0;
+            let passCount = 0;
+            const students = data.students || [];
+
+            students.forEach(s => {
+                totalSGPA += s.sgpa || 0;
+                if (s.result === 'PASS') passCount++;
+            });
+
+            const avgSGPA = students.length > 0 ? (totalSGPA / students.length).toFixed(2) : '0.00';
+            const passRate = students.length > 0 ? Math.round((passCount / students.length) * 100) : 0;
+
+            document.getElementById('step4AvgSGPA').textContent = avgSGPA;
+            document.getElementById('step4PassRate').textContent = passRate + '%';
+
+            // Update extraction statistics
+            if (data.extraction_stats) {
+                document.getElementById('extractedCount').textContent = data.extraction_stats.extracted || 0;
+                document.getElementById('missingCount').textContent = data.extraction_stats.missing || 0;
+                document.getElementById('extractionRate').textContent = (data.extraction_stats.fill_rate || 0) + '%';
+            }
+
+            // Dynamically build table headers with course NAMES
+            const thead = document.getElementById('resultSheetHead');
+            const headerRow = document.createElement('tr');
+
+            // Static headers first
+            const staticHeaders = ['PRN', 'Name', 'Section', 'TOT_MRKS', 'SGPA', 'Result'];
+            staticHeaders.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+
+            // Get course names from first student's data (up to 8 for preview)
+            const firstStudent = students[0] || {};
+            const courseHeaders = [];
+            for (let i = 1; i <= 8; i++) {
+                const courseName = firstStudent[`sub${i}nm`] || firstStudent[`sub${i}`] || `SUB${i}`;
+                if (courseName && courseName !== `SUB${i}`) {
+                    const th = document.createElement('th');
+                    // Truncate long names for display
+                    th.textContent = courseName.length > 25 ? courseName.substring(0, 22) + '...' : courseName;
+                    th.title = courseName; // Full name on hover
+                    headerRow.appendChild(th);
+                    courseHeaders.push(i);
+                }
+            }
+
+            // Add "..." if more courses
+            if (firstStudent.sub9nm || firstStudent.sub9) {
+                const th = document.createElement('th');
+                th.textContent = '...';
+                headerRow.appendChild(th);
+            }
+
+            thead.innerHTML = '';
+            thead.appendChild(headerRow);
+
+            // Populate preview table with totals
+            const tbody = document.getElementById('resultSheetBody');
+            tbody.innerHTML = '';
+
+            students.slice(0, 50).forEach(student => {
+                const row = document.createElement('tr');
+
+                // Static columns
+                row.innerHTML = `
+                    <td>${student.prn || ''}</td>
+                    <td>${student.name || ''}</td>
+                    <td>${student.section || ''}</td>
+                    <td class="marks-cell">${student.tot_mrks || 0}</td>
+                    <td class="marks-cell">${student.sgpa?.toFixed(2) || '0.00'}</td>
+                    <td class="${student.result === 'PASS' ? 'enrolled' : 'fail-cell'}">${student.result || ''}</td>
+                `;
+
+                // Course total columns (show marks, not course names)
+                courseHeaders.forEach(i => {
+                    const total = student[`sub${i}_tot`] || '-';
+                    const td = document.createElement('td');
+                    td.className = 'marks-cell';
+                    td.textContent = total;
+                    row.appendChild(td);
+                });
+
+                // Add "..." if more courses
+                if (firstStudent.sub9nm || firstStudent.sub9) {
+                    const td = document.createElement('td');
+                    td.textContent = '...';
+                    row.appendChild(td);
+                }
+
+                tbody.appendChild(row);
+            });
+
+            if (students.length > 50) {
+                const colCount = 6 + courseHeaders.length + (firstStudent.sub9nm ? 1 : 0);
+                const infoRow = document.createElement('tr');
+                infoRow.innerHTML = `<td colspan="${colCount}" style="text-align: center; font-style: italic;">... and ${students.length - 50} more students</td>`;
+                tbody.appendChild(infoRow);
+            }
+        }
+
+        async function downloadResultSheet() {
+            if (!resultSheetData) {
+                alert('Please generate the result sheet first.');
+                return;
+            }
+
+            try {
+                const semester = document.getElementById('semesterSelect').value;
+                const session = document.getElementById('sessionInput').value;
+
+                const response = await fetch('/download-result-sheet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        data: resultSheetData,
+                        semester: semester,
+                        session: session
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Download failed');
+                }
+
+                const arrayBuffer = await response.arrayBuffer();
+                const blob = new Blob([arrayBuffer], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `Result_Sheet_${semester}_${session.replace('-', '_')}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+            } catch (error) {
+                alert('Download failed: ' + error.message);
+            }
+        }
+    </script>
+</body>
+
+</html>
