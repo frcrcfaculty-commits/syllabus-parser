@@ -5,16 +5,19 @@
 }
 
 :root {
-    --bg-primary: #0f0f1a;
-    --bg-secondary: #1a1a2e;
-    --bg-card: rgba(30, 30, 50, 0.8);
+    --bg-primary: #1a0f0f;
+    --bg-secondary: #2e1a1a;
+    --bg-card: rgba(50, 30, 30, 0.8);
     --text-primary: #ffffff;
-    --text-secondary: #a0a0b0;
-    --accent: #6c5ce7;
-    --accent-light: #a29bfe;
-    --success: #00b894;
+    --text-secondary: #c0a0a0;
+    --accent: #8B0000;
+    --accent-light: #CD5C5C;
+    --accent-gold: #DAA520;
+    --success: #228B22;
     --border: rgba(255, 255, 255, 0.1);
-    --gradient: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+    --gradient: linear-gradient(135deg, #8B0000 0%, #DAA520 100%);
+    --maroon: #800000;
+    --gold: #FFD700;
 }
 
 body {
@@ -23,8 +26,8 @@ body {
     color: var(--text-primary);
     min-height: 100vh;
     background-image:
-        radial-gradient(circle at 20% 80%, rgba(108, 92, 231, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(162, 155, 254, 0.1) 0%, transparent 50%);
+        radial-gradient(circle at 20% 80%, rgba(139, 0, 0, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(218, 165, 32, 0.1) 0%, transparent 50%);
 }
 
 .container {
@@ -33,19 +36,89 @@ body {
     padding: 2rem;
 }
 
-header {
+/* College Header Styles */
+header.college-header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
+    position: relative;
+    background: linear-gradient(180deg, rgba(139, 0, 0, 0.2) 0%, transparent 100%);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(218, 165, 32, 0.3);
 }
 
-header h1 {
-    font-size: 2.5rem;
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.college-logo {
+    height: 100px;
+    width: auto;
+    border-radius: 8px;
+    background: white;
+    padding: 5px;
+}
+
+.header-text {
+    text-align: left;
+}
+
+.college-affiliation {
+    font-size: 0.85rem;
+    color: var(--accent-gold);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.header-text h1 {
+    font-size: 1.6rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
-    background: var(--gradient);
+    margin: 0.3rem 0;
+    background: linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.college-address {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0.2rem 0;
+}
+
+.college-subtitle {
+    color: var(--accent-light);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.app-title {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(218, 165, 32, 0.3);
+}
+
+.app-title h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.app-title p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.reset-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
 }
 
 header p {

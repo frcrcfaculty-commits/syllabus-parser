@@ -4,17 +4,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syllabus Parser | Marks Distribution Generator</title>
+    <title>Result Sheet Generator | Fr. CRCE</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="container">
-        <header>
-            <h1>🎓 Syllabus Parser</h1>
-            <p>Generate marks distribution and student course matrix</p>
-            <button class="btn btn-danger" onclick="resetAllData()" style="position: absolute; top: 20px; right: 20px;">
+        <header class="college-header">
+            <div class="header-content">
+                <img src="{{ url_for('static', filename='college_logo.png') }}" alt="Fr. CRCE Logo"
+                    class="college-logo">
+                <div class="header-text">
+                    <div class="college-affiliation">Society of St. Francis Xavier, Pilar's</div>
+                    <h1>Fr. Conceicao Rodrigues College of Engineering</h1>
+                    <p class="college-address">Fr. Agnel Ashram, Bandstand, Bandra (W), Mumbai – 400 050</p>
+                    <p class="college-subtitle">Autonomous College affiliated to University of Mumbai | NAAC 'A' Grade
+                    </p>
+                </div>
+            </div>
+            <div class="app-title">
+                <h2>📋 Result Sheet Generator</h2>
+                <p>Generate comprehensive result sheets from syllabus and examination data</p>
+            </div>
+            <button class="btn btn-danger reset-btn" onclick="resetAllData()">
                 🗑️ Reset All Data
             </button>
         </header>
