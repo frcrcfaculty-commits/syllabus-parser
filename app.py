@@ -16,9 +16,12 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
+# On Vercel the code directory is read-only, so uploads and the SQLite
+# database live in /tmp (reset on each cold start).
+_DATA_DIR = '/tmp/syllabus_parser' if os.environ.get('VERCEL') else '.'
+app.config['UPLOAD_FOLDER'] = os.path.join(_DATA_DIR, 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
-app.config['DATABASE'] = 'syllabus_data.db'
+app.config['DATABASE'] = os.path.join(_DATA_DIR, 'syllabus_data.db')
 
 import re
 import pdfplumber
@@ -158,8 +161,7 @@ def init_db():
 
 # Initialize database on startup
 with app.app_context():
-    if not os.path.exists('uploads'):
-        os.makedirs('uploads')
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     init_db()
 
 def parse_pdf_syllabus(file_path):
@@ -756,7 +758,7 @@ def upload_students():
     if not filename.lower().endswith(('.xlsx', '.xls')):
         return jsonify({'error': 'Please upload an Excel file (.xlsx or .xls)'}), 400
     
-    filepath = os.path.join('uploads', filename)
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
     
     try:
